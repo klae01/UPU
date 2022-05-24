@@ -1,4 +1,5 @@
 import itertools
+
 import numpy as np
 import torch
 
@@ -43,6 +44,10 @@ def generall_fully_denoise(x):
 
 @torch.no_grad()
 def denoise_2d(x):
+    # x follows the shape [*, D, H, W]
+    # D is the dimension
+    # H and W represent height and width.
+
     if type(x) == torch.Tensor:
         lib = torch
         axis_name = "dim"
@@ -56,7 +61,7 @@ def denoise_2d(x):
         r_data -= lib.median(r_data, axis=-2, keepdims=True)
 
     for _ in range(5):
-        denom = 1 / (1e-9 + lib.linalg.norm(r_data, ord=2, **{axis_name: 0}))
+        denom = 1 / (1e-9 + lib.linalg.norm(r_data, ord=2, **{axis_name: -3}))
         num = r_data * denom
         for i in [-1, -2]:
             A = num.mean(**{axis_name: i}, keepdims=True)
