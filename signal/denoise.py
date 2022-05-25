@@ -61,7 +61,7 @@ def denoise_2d(x):
         r_data -= lib.median(r_data, axis=-2, keepdims=True)
 
     for _ in range(5):
-        denom = 1 / (1e-9 + lib.linalg.norm(r_data, ord=2, **{axis_name: -3}))
+        denom = 1 / (1e-9 + lib.linalg.norm(r_data, ord=2, **{axis_name: -3}, keepdims=True))
         num = r_data * denom
         for i in [-1, -2]:
             A = num.mean(**{axis_name: i}, keepdims=True)
