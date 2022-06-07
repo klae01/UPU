@@ -88,9 +88,7 @@ class GroupNorm1D(torch.nn.Module):
         ) / torch.sqrt(var.view(convert_shape).mean(dim=2, keepdim=True) + self.eps)
         result = result.view(origin_shape)
         if self.affine:
-            result.mul_(self.weight[None, :, :, None]).add_(
-                self.bias[None, :, :, None]
-            )
+            result.mul_(self.weight[None, :, :, None]).add_(self.bias[None, :, :, None])
         return result
 
     def extra_repr(self) -> str:
