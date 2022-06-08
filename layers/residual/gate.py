@@ -16,6 +16,9 @@ class Gate_AG(torch.autograd.Function):
     @staticmethod
     @torch.no_grad()
     def backward(ctx, x):
+        def sum_over_batch(x):
+            return x.sum(tuple(range(1, len(x.shape))))
+
         x0, residual, r = ctx.saved_tensors
 
         ar = r.tanh()
@@ -24,11 +27,7 @@ class Gate_AG(torch.autograd.Function):
         dar = a0.square()  # d/dx(tanh(x)) = sech^2(x)
         da0 = -r.tanh() * a0  # d/dx((1 - tanh^2(x))^0.5) = sinh(x) (-sech^2(x))
 
-        v_shape = [x.size(0), -1]
-        rezero_grad = (
-            torch.einsum("Bf,Bf->B", x.view(*v_shape), x0.view(*v_shape)) * da0
-            + torch.einsum("Bf,Bf->B", x.view(*v_shape), residual.view(*v_shape)) * dar
-        )
+        rezero_grad = sum_over_batch(x * x0) * da0 + sum_over_batch(x * residual) * dar
         return a0 * x, ar * x, rezero_grad
 
 
