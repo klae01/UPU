@@ -1,11 +1,11 @@
 __all__ = ["Block"]
 
 from typing import Union
+
 import torch
 import torch.nn as nn
-
-from torch.nn.modules.utils import _pair
 from torch.nn.common_types import _size_2_t
+from torch.nn.modules.utils import _pair
 
 from .. import Gate
 from . import Computing_Conv2d
@@ -123,7 +123,6 @@ class Block(nn.Module):
         B, C, H, W = hidden_state.size()
         K = self.cardinality
         R = self.radix
-        WS = self.local_window_size or [H, W]
 
         x = hidden_state
         x = nn.functional.group_norm(x, **next(NORM))  # [B, C, H, W]
@@ -141,6 +140,8 @@ class Block(nn.Module):
             x = self.avd_layer(x)
 
         x = nn.functional.group_norm(x, **next(NORM))
+        H, W = x.shape[-2:]
+        WS = self.local_window_size or [H, W]
         y = x
 
         x = x.view(
@@ -163,4 +164,4 @@ class Block(nn.Module):
         x = nn.functional.group_norm(x, **next(NORM))
 
         identity = self.downsample(hidden_state) if self.downsample else hidden_state
-        return self.gate(identity, x.view(B, C, H, W))
+        return self.gate(identity, x.view(B, -1, H, W))
