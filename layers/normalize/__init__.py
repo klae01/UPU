@@ -1,1 +1,1 @@
-from groupnorm import *
+from .groupnorm import *
