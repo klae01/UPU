@@ -18,7 +18,7 @@ class Block(nn.Module):
         out_features: int,
         kernel_size: int = 3,
         stride: int = 1,
-        downsample: nn.Module = None,
+        resample: nn.Module = None,
         radix: int = 2,
         cardinality: int = 2,
         dilation: int = 1,
@@ -36,7 +36,7 @@ class Block(nn.Module):
             out_features (int): _description_
             kernel_size (int, optional): _description_. Defaults to 3.
             stride (int, optional): _description_. Defaults to 1.
-            downsample (nn.Module, optional): define downsampling module. Defaults to None.
+            resample (nn.Module, optional): define downsampling module. Defaults to None.
             radix (int, optional): _description_. Defaults to 2.
             cardinality (int, optional): _description_. Defaults to 2.
             dilation (int, optional): _description_. Defaults to 1.
@@ -50,7 +50,7 @@ class Block(nn.Module):
         super().__init__()
         self.in_features = in_features
         self.channels = channels = out_features
-        self.downsample = downsample
+        self.resample = resample
         self.radix = r = radix
         self.cardinality = k = cardinality
         self.avd = avd and (stride > 1 or is_first)
@@ -60,22 +60,24 @@ class Block(nn.Module):
         )
         inter_channels = max(channels // 8, 32)
 
-        if stride != 1 and self.downsample is None:
+        if in_features != out_features or stride != 1 and self.resample is None:
             if avg_down:
-                self.downsample = nn.Sequential(
+                self.resample = nn.Sequential(
                     nn.AvgPool2d(
                         kernel_size=stride,
                         stride=stride,
                         ceil_mode=True,
                         count_include_pad=False,
                     ),
+                    nn.GroupNorm(normalize_group_size, in_features, affine=False),
                     nn.Conv2d(
                         in_features, out_features, kernel_size=1, stride=1, bias=False
                     ),
-                    nn.GroupNorm(normalize_group_size, out_features),
+                    nn.GroupNorm(normalize_group_size, out_features, affine=False),
                 )
             else:
-                self.downsample = nn.Sequential(
+                self.resample = nn.Sequential(
+                    nn.GroupNorm(normalize_group_size, in_features, affine=False),
                     nn.Conv2d(
                         in_features,
                         out_features,
@@ -83,7 +85,7 @@ class Block(nn.Module):
                         stride=stride,
                         bias=False,
                     ),
-                    nn.GroupNorm(normalize_group_size, out_features),
+                    nn.GroupNorm(normalize_group_size, out_features, affine=False),
                 )
         if self.avd:
             self.avd_layer = nn.AvgPool2d(3, stride, padding=1)
@@ -163,5 +165,5 @@ class Block(nn.Module):
         )
         x = nn.functional.group_norm(x, **next(NORM))
 
-        identity = self.downsample(hidden_state) if self.downsample else hidden_state
+        identity = self.resample(hidden_state) if self.resample else hidden_state
         return self.gate(identity, x.view(B, -1, H, W))
