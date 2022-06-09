@@ -11,6 +11,15 @@ from .. import Gate
 from . import Computing_Conv2d
 
 
+class GN(nn.Module):
+    def __init__(self, groups):
+        super().__init__()
+        self.groups = groups
+
+    def forward(self, x):
+        return nn.functional.group_norm(x, self.groups)
+
+
 class Block(nn.Module):
     def __init__(
         self,
@@ -69,15 +78,15 @@ class Block(nn.Module):
                         ceil_mode=True,
                         count_include_pad=False,
                     ),
-                    nn.GroupNorm(normalize_group_size, in_features, affine=False),
+                    GN(normalize_group_size),
                     nn.Conv2d(
                         in_features, out_features, kernel_size=1, stride=1, bias=False
                     ),
-                    nn.GroupNorm(normalize_group_size, out_features, affine=False),
+                    GN(normalize_group_size),
                 )
             else:
                 self.resample = nn.Sequential(
-                    nn.GroupNorm(normalize_group_size, in_features, affine=False),
+                    GN(normalize_group_size),
                     nn.Conv2d(
                         in_features,
                         out_features,
@@ -85,7 +94,7 @@ class Block(nn.Module):
                         stride=stride,
                         bias=False,
                     ),
-                    nn.GroupNorm(normalize_group_size, out_features, affine=False),
+                    GN(normalize_group_size),
                 )
         if self.avd:
             self.avd_layer = nn.AvgPool2d(3, stride, padding=1)
