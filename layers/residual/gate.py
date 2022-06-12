@@ -11,7 +11,7 @@ class Gate_AG(torch.autograd.Function):
     @staticmethod
     @torch.no_grad()
     def forward(ctx, x0: Tensor, residual: Tensor, rezero: Tensor):
-        assert max(len(x0.shape), len(residual)) < len(rezero)
+        assert max(len(x0.shape), len(residual.shape)) > len(rezero.shape)
         ar = rezero.tanh()
         a0 = rezero.cosh().reciprocal()  # = (1 - ar**2)**0.5 = sech(x)
         ctx.save_for_backward(x0, residual, a0, ar)
