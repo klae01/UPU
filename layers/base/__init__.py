@@ -1,1 +1,1 @@
-from bconv2d import BConv2d
+from .bconv2d import BConv2d
